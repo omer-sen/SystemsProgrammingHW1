@@ -6,6 +6,7 @@
 #define MEMLENGTH 512
 #define FREE 0
 #define ALOC 1
+#define ROUNDUP8(x) (((x) + 7) & (-8))
 
 static double memory[MEMLENGTH];
 char *heapstart = (char *) memory;//heapstart will refer to the first byte of memory,
@@ -19,22 +20,28 @@ typedef struct Metadata{ //16 bytes
 }meta;
 
 int metasize = sizeof(meta);
-static meta* header  =NULL;
-int firstmalloc = 1; //need to initialize the first header on first malloc
+static meta* header  = NULL;
+//int firstmalloc = 1; //need to initialize the first header on first malloc
 
 //metadata and payload must both be multiples of 8
     //metadata should always be 8 bytes
 
 void* mymalloc(size_t size, char* file, int line){
     //if firstmalloc, place first meta block
-    if(firstmalloc){
+    if(size==0){
+        printf("Cannot allocate 0 bytes");
+        return NULL;
+    }
+
+    size= ROUNDUP8(size);
+    if(!header){
         //inititialize first header on first malloc
         header = (meta*) heapstart;
         header->next = NULL;
         header->size = MEMLENGTH;
         header->state = FREE;
 
-        firstmalloc = 0;
+        //firstmalloc = 0;
 
     }
     meta* ptr = header;
