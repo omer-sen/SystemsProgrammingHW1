@@ -145,5 +145,6 @@ void* myfree(void* ptr,char* file, int line){
     //probably really handy to have a prev pointer for this
     //need to coalesce too
     
-
+    printf("Invalid pointer, requested in FILE %s at LINE %d", file, line);
+    return NULL;
 }
