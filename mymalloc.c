@@ -11,6 +11,7 @@
 
 static double memory[MEMLENGTH];
 char *heapstart = (char *) memory;//heapstart will refer to the first byte of memory,
+
     // b/c it is memory casted as a char array.
 
                 // typedef struct Metadata{ //16 bytes
@@ -22,7 +23,7 @@ char *heapstart = (char *) memory;//heapstart will refer to the first byte of me
 
                 // int metasize = sizeof(meta);
                 // static meta* header  = NULL;
-int firstmalloc = 1; //need to initialize the first header on first malloc
+//int firstmalloc = 1; //need to initialize the first header on first malloc
 
 //metadata and payload must both be multiples of 8
     //metadata should always be 8 bytes
@@ -101,18 +102,18 @@ void* mymalloc(size_t size, char* file, int line){
         bool IsFree = isFree(ptr);
         int chunkSize = getSize(ptr);
 
-        if(firstmalloc || (IsFree && chunkSize >= size+8) ){
+        if(chunkSize==0 || (IsFree && chunkSize >= size+8) ){
                                                 //size for next metadata too
             setSize(ptr, size);
             setState(ptr, 1);
             //set up next metadata
-            if(firstmalloc)
+            if(chunkSize==0)
                 setSizeNext(ptr, MEMLENGTH - (size + 8));
             else 
                 setSizeNext(ptr, chunkSize - (size+8));
             
             setStateNext(ptr, 1);
-            firstmalloc = 0;
+            //*firstmalloc = 0;
             return ptr+8;
 
                 // if(ptr->size < (size + metasize) || ptr->state != FREE){

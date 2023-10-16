@@ -8,7 +8,7 @@ int main(){
     
     int* x = malloc(sizeof(int));
     *x =256;
-    printf("x=%d", *x);
+    printf("x=%d \n", *x);
 
     return EXIT_SUCCESS;
 }
