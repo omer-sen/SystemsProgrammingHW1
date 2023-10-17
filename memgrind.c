@@ -21,6 +21,19 @@ bool test1(){
     }
     return memCleared() ==1;
 }
+bool test2(){
+    char* arr[120];
+    for(int i=0; i<120; i++){
+        arr[i] = malloc(1);
+        if(arr[i]==NULL){
+            return false;
+        }
+    }
+    for(int i=0; i<120; i++){
+        free(arr[i]);
+    }
+    return memCleared() ==1;
+}
 int main(){
 
 
@@ -29,13 +42,32 @@ int main(){
     //test1
     for(int i = 0; i < 50; i++) {
         clock_t start = clock();
-        test1();
+        if(test1()==false){
+            printf("error");
+            return EXIT_SUCCESS;
+        }
         clock_t end = clock();
         double time = (double) (end-start) / CLOCKS_PER_SEC;
         timeSum+=time;
     }
     double avgTime =timeSum/50;
     printf("Average time for test1: %f\n", avgTime);
+    //clear memory
+
+    //test2
+    timeSum=0;
+    for(int i = 0; i < 50; i++) {
+        clock_t start = clock();
+        if(test2()==false){
+            printf("error");
+            return EXIT_SUCCESS;
+        }
+        clock_t end = clock();
+        double time = (double) (end-start) / CLOCKS_PER_SEC;
+        timeSum+=time;
+    }
+    avgTime =timeSum/50;
+    printf("Average time for test2: %f\n", avgTime);
 
     return EXIT_SUCCESS;
 }
