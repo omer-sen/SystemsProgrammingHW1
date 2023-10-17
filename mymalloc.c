@@ -5,28 +5,16 @@
 #include "mymalloc.h"
 
 #define MEMLENGTH 512
-#define FREE 0
-#define ALOC 1
+#define FREE 1
+#define ALOC 0
 #define ROUNDUP8(x) (((x) + 7) & (-8))
 
 static double memory[MEMLENGTH];
 char *heapstart = (char *) memory;//heapstart will refer to the first byte of memory,
-
-    // b/c it is memory casted as a char array.
-
-                // typedef struct Metadata{ //16 bytes
-                //     int size; //size of FULL chunk  ( meta+payload)
-                //     int state;
-                //     struct Metadata *next; //8 bytes
-                //     //struct Metadata *prev
-                // }meta;
-
-                // int metasize = sizeof(meta);
-                // static meta* header  = NULL;
-//int firstmalloc = 1; //need to initialize the first header on first malloc
-
-//metadata and payload must both be multiples of 8
-    //metadata should always be 8 bytes
+    
+bool validPtr(char* ptr){
+    return (ptr<heapstart+MEMLENGTH);
+}
 int getSize(char* ptr){
     int* p = (int*) ptr;
     return *p;
@@ -34,7 +22,7 @@ int getSize(char* ptr){
 }
 bool isFree(char*ptr){
     int* p = (int*) (ptr+8);
-    return (*p==0);
+    return (*p==1);
 }
 bool setSize(char* ptr, int size){
     int* p2 = (int*) ptr;
@@ -55,7 +43,7 @@ int getSizeNext(char* ptr){
 bool isFreeNext(char* ptr){
     ptr = getNext(ptr);
     int* p = (int*) (ptr+8);
-    return (*p==0);
+    return (*p==1);
 }
 
 bool setSizeNext(char* ptr, int size){
@@ -76,36 +64,20 @@ char* getNext(char* ptr){
     return ptr + size1;
 }
 void* mymalloc(size_t size, char* file, int line){
-    //if firstmalloc, place first meta block
     if(size==0){
         printf("Cannot allocate 0 bytes");
         return NULL;
     }
+    size= ROUNDUP8(size); //metadata should always be a multiple of 8 bytes
 
-    size= ROUNDUP8(size);
-                // if(!header){
-                //     //inititialize first header on first malloc
-                //     header = (meta*) heapstart;
-                //     header->next = NULL;
-                //     header->size = MEMLENGTH;
-                //     header->state = FREE;
-
-                //     //firstmalloc = 0;
-
-                // }
     char* ptr = heapstart;
-    //now look for chunk big enough to hold memory
-    /* Conditions:
-        if chunk is not big enough OR is not free go to next chunk
-    */
     while(ptr<heapstart +MEMLENGTH){
         bool IsFree = isFree(ptr);
         int chunkSize = getSize(ptr);
 
-        if(chunkSize==0 || (IsFree && chunkSize >= size+8) ){
-                                                //size for next metadata too
-            setSize(ptr, size);
-            setState(ptr, 1);
+        if(chunkSize==0 || (IsFree && chunkSize >= size+8) ){//space for next metadata too
+            setSize(ptr, size+8);
+            setState(ptr, 0);
             //set up next metadata
             if(chunkSize==0)
                 setSizeNext(ptr, MEMLENGTH - (size + 8));
@@ -113,23 +85,10 @@ void* mymalloc(size_t size, char* file, int line){
                 setSizeNext(ptr, chunkSize - (size+8));
             
             setStateNext(ptr, 1);
-            //*firstmalloc = 0;
+      
             return ptr+8;
 
-                // if(ptr->size < (size + metasize) || ptr->state != FREE){
-                    
-                //     ptr = ptr->next;
-                // }else{
-                    
-                //     //set up next metadata
-                //     ptr->next = (char*)ptr + size + metasize; //cast to char* so it's refering to 1 byte
-                //     ptr->next->state = FREE;        //^ size of ptr
-                //     ptr->next->size = ptr->size - size - metasize;
-
-                //     ptr->state = ALOC;
-                //     ptr->size = metasize + size;
-                //     return (char*)ptr + metasize;
-                // }
+                
         }else{
             ptr= getNext(ptr);
         }
@@ -137,15 +96,49 @@ void* mymalloc(size_t size, char* file, int line){
     }
 
     //not enough space 
-    printf("Not enough space for %zu BYTES, requested in FILE %s at LINE %d", size, file, line);
+    printf("Not enough space for %zu BYTES, requested in FILE %s at LINE %d\n", size, file, line);
     return NULL;
 
 }
+bool isPrecedingAndFree(char* curr, char* ptr){
+    return (getNext(curr) == ptr) && (isFree(curr));
+}
+bool mergeBlocks(char* p1, char* p2){
+    //merge to p1
+    int size1 = getSize(p1);
+    int size2 = getSize(p2);
+    return (setSize(p1, size1+size2));
 
+}
 void* myfree(void* ptr,char* file, int line){
-    //probably really handy to have a prev pointer for this
-    //need to coalesce too
-    
-    printf("Invalid pointer, requested in FILE %s at LINE %d", file, line);
+   
+    char* curr = heapstart;
+    char* realPtr = ptr - 8;
+
+    while(curr< heapstart+MEMLENGTH){
+        
+        if(isPrecedingAndFree(curr, realPtr)){
+            mergeBlocks(curr, realPtr);
+            if(isFree(getNext(curr))){
+                mergeBlocks(curr, getNext(curr));
+            }
+            //invalidate ptr?
+            return NULL;
+        }
+        if(realPtr == curr){
+            if(isFree(realPtr)){
+                printf("Error: Double free, in FILE %s at LINE %d\n", file, line);
+                return NULL;
+            }
+            if(isFree(getNext(curr))){
+                mergeBlocks(curr, getNext(curr));
+            }
+            setState(realPtr, 1);
+            //invalidate prr
+            return NULL;
+        }
+        curr = getNext(curr);
+    }
+    printf("Invalid pointer, requested in FILE %s at LINE %d\n", file, line);
     return NULL;
 }
