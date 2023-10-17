@@ -8,12 +8,13 @@ void* mymalloc(size_t size, char* file, int line);
 void* myfree(void* ptr,char* file, int line);
 int getSize(char* ptr);
 bool isFree(char*ptr);
-bool setSize(char* ptr, int size);
-bool setState(char* ptr, int state);
+void setSize(char* ptr, int size);
+void setState(char* ptr, int state);
 int getSizeNext(char* ptr);
 bool isFreeNext(char* ptr);
-bool setSizeNext(char* ptr, int size);
-bool setStateNext(char* ptr, int state);
+void setSizeNext(char* ptr, int size);
+void setStateNext(char* ptr, int state);
 char* getNext(char* ptr);
-
+bool isPrecedingAndFree(char* curr, char* ptr);
+void mergeBlocks(char* p1, char* p2);
 #endif
