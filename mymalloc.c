@@ -14,6 +14,7 @@ char *heapstart = (char *) memory;//heapstart will refer to the first byte of me
  
 bool validPtr(char* ptr){
     return (ptr<heapstart+MEMLENGTH) && (ptr>=heapstart);
+    //PPOINTER MUST ALSO BE AT THE START OF A PAYLOAD!!!
 }
 int getSize(char* ptr){
     int* p = (int*) ptr;
@@ -21,7 +22,7 @@ int getSize(char* ptr){
 
 }
 bool isFree(char*ptr){
-    int* p = (int*) (ptr+8);
+    int* p = (int*) (ptr+4);
     return (*p==1);
 }
 bool setSize(char* ptr, int size){
@@ -30,31 +31,31 @@ bool setSize(char* ptr, int size){
     return  (*p2 = size);
 }
 bool setState(char* ptr, int state){
-    int* p2 = (int*) (ptr+8);
+    int* p2 = (int*) (ptr+4);
     return (*p2 = state);
 }
 int getSizeNext(char* ptr){
-    ptr = getNext(ptr);
-    int *p = (int*) ptr;
+    int* p = (int*) getNext(ptr);
+    //int *p = (int*) ptr;
     return *p;
     
 }
 
 bool isFreeNext(char* ptr){
-    ptr = getNext(ptr);
-    int* p = (int*) (ptr+8);
+    //ptr = getNext(ptr);
+    int* p = (int*) (getNext(ptr)+4);
     return (*p==1);
 }
 
 bool setSizeNext(char* ptr, int size){
-    ptr = getNext(ptr);
-    int* p = (int*) ptr;
+    //ptr = getNext(ptr);
+    int* p = (int*) getNext(ptr);
     return (*p=size);
 }
 
 bool setStateNext(char* ptr, int state){
-    ptr = getNext(ptr);
-    int* p = (int*) (ptr+8);
+    //ptr = getNext(ptr);
+    int* p = (int*) (getNext(ptr)+4);
     return (*p=state);
 }
 
@@ -75,15 +76,21 @@ void* mymalloc(size_t size, char* file, int line){
         bool IsFree = isFree(ptr);
         int chunkSize = getSize(ptr);
 
-        if(chunkSize==0 || (IsFree && chunkSize >= size+8) ){//space for next metadata too
+        if(chunkSize==0 || (IsFree && chunkSize >= size+16) ){//space for current+next metadata (8+8)
             setSize(ptr, size+8);
             setState(ptr, 0);
             //set up next metadata
             if(chunkSize==0)
                 setSizeNext(ptr, MEMLENGTH - (size + 8));
-            else 
-                setSizeNext(ptr, chunkSize - (size+8));
-            
+            else{ 
+                if(chunkSize - (size+8) == 8){ 
+                //if chunkSize only has space for payload and new metadata (ie new metadata is useless), 
+                // then just give that space to payload
+                    setSize(ptr, getSize(ptr) + 8);
+                    return ptr+8;
+                }else
+                    setSizeNext(ptr, chunkSize - (size+8));
+            }
             setStateNext(ptr, 1);
             return ptr+8;      
         }else{
