@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "mymalloc.h"
 
-#define MEMLENGTH 2048
+#define MEMLENGTH 512
 #define FREE 1
 #define ALOC 0
 #define ROUNDUP8(x) (((x) + 7) & (-8))
@@ -14,7 +14,7 @@ char *heapstart = (char *) memory;//heapstart will refer to the first byte of me
  
 bool validPtr(char* ptr){
     return (ptr<heapstart+MEMLENGTH) && (ptr>=heapstart);
-    //PPOINTER MUST ALSO BE AT THE START OF A PAYLOAD!!!
+    //POINTER MUST ALSO BE AT THE START OF A PAYLOAD!!!
 }
 int getSize(char* ptr){
     int* p = (int*) ptr;
@@ -65,7 +65,7 @@ char* getNext(char* ptr){
 }
 void* mymalloc(size_t size, char* file, int line){
     if(size==0){
-        printf("Cannot allocate 0 bytes");
+        printf("Erorr: Attempted to allocate 0 bytes, in FILE %s at LINE %d\n", file, line);
         return NULL;
     }
     size= ROUNDUP8(size); //metadata should always be a multiple of 8 bytes
