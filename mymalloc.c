@@ -11,9 +11,9 @@
 
 static double memory[MEMLENGTH];
 char *heapstart = (char *) memory;//heapstart will refer to the first byte of memory,
-    
+ 
 bool validPtr(char* ptr){
-    return (ptr<heapstart+MEMLENGTH);
+    return (ptr<heapstart+MEMLENGTH) && (ptr>=heapstart);
 }
 int getSize(char* ptr){
     int* p = (int*) ptr;
@@ -85,20 +85,14 @@ void* mymalloc(size_t size, char* file, int line){
                 setSizeNext(ptr, chunkSize - (size+8));
             
             setStateNext(ptr, 1);
-      
-            return ptr+8;
-
-                
+            return ptr+8;      
         }else{
             ptr= getNext(ptr);
         }
-
     }
-
     //not enough space 
     printf("Not enough space for %zu BYTES, requested in FILE %s at LINE %d\n", size, file, line);
     return NULL;
-
 }
 bool isPrecedingAndFree(char* curr, char* ptr){
     return (getNext(curr) == ptr) && (isFree(curr));
@@ -108,15 +102,16 @@ bool mergeBlocks(char* p1, char* p2){
     int size1 = getSize(p1);
     int size2 = getSize(p2);
     return (setSize(p1, size1+size2));
-
 }
 void* myfree(void* ptr,char* file, int line){
-   
+    if(!validPtr(ptr)){
+        printf("Error: Attempted to free a pointer that was not obtained from heap, in FILE %s at LINE %d\n", file, line);
+        return NULL;
+    }
     char* curr = heapstart;
     char* realPtr = ptr - 8;
 
     while(curr< heapstart+MEMLENGTH){
-        
         if(isPrecedingAndFree(curr, realPtr)){
             mergeBlocks(curr, realPtr);
             if(isFree(getNext(curr))){
@@ -139,6 +134,6 @@ void* myfree(void* ptr,char* file, int line){
         }
         curr = getNext(curr);
     }
-    printf("Invalid pointer, requested in FILE %s at LINE %d\n", file, line);
+    printf("Error: Attempted to free a pointer that does not point to the start of an alloted chunk OR was previously freed, in FILE %s at LINE %d\n", file, line);
     return NULL;
 }
