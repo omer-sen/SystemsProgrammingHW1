@@ -1,75 +1,147 @@
+
+
 #include <stdio.h> 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include "mymalloc.h"
 
 #define MEMLENGTH 512
-static double memory[MEMLENGTH];
-
-int main(){
-#define FREE 0
-#define ALOC 1
-
+#define FREE 1
+#define ALOC 0
+#define ROUNDUP8(x) (((x) + 7) & (-8))
 
 static double memory[MEMLENGTH];
 char *heapstart = (char *) memory;//heapstart will refer to the first byte of memory,
-    // b/c it is memory casted as a char array.
+ 
+ struct MetaData {
+    size_t size;
+    int is_allocated;
+    struct MetaData* next;
+};
 
-typedef struct Metadata{ //16 bytes
-    int size; //size of FULL chunk  ( meta+payload)
-    int state;
-    struct Metadata *next; //8 bytes
-    //struct Metadata *prev
-}meta;
-
-int metasize = sizeof(meta);
-static meta* header  =NULL;
-int firstmalloc = 1; //need to initialize the first header on first malloc
-
-//metadata and payload must both be multiples of 8
-    //metadata should always be 8 bytes
+bool validPtr(char* ptr){
+    return (ptr<heapstart+MEMLENGTH) && (ptr>=heapstart);
+}
+int getSize(char* ptr){
+    int* p = (int*) ptr;
+    return *p;
 
 }
-void* mymalloc(size_t size, char* file, int line){
-    //if firstmalloc, place first meta block
-    if(firstmalloc){
-        //inititialize first header on first malloc
-        header = (meta*) heapstart;
-        header->next = NULL;
-        header->size = MEMLENGTH;
-        header->state = FREE;
+bool isFree(char*ptr){
+    int* p = (int*) (ptr+4);
+    return (*p==1);
+}
+bool setSize(char* ptr, int size){
+    int* p2 = (int*) ptr;
+    *p2 = size;
+    return  (*p2 = size);
+}
+bool setState(char* ptr, int state){
+    int* p2 = (int*) (ptr+4);
+    return (*p2 = state);
+}
+int getSizeNext(char* ptr){
+    int* p = (int*) getNext(ptr);
+    //int *p = (int*) ptr;
+    return *p;
+    
+}
 
-        firstmalloc = 0;
+bool isFreeNext(char* ptr){
+    //ptr = getNext(ptr);
+    int* p = (int*) (getNext(ptr)+4);
+    return (*p==1);
+}
 
+bool setSizeNext(char* ptr, int size){
+    //ptr = getNext(ptr);
+    int* p = (int*) getNext(ptr);
+    return (*p=size);
+}
+
+bool setStateNext(char* ptr, int state){
+    //ptr = getNext(ptr);
+    int* p = (int*) (getNext(ptr)+4);
+    return (*p=state);
+}
+
+char* getNext(char* ptr){
+    int* p = (int*) ptr;
+    int size1 = *p;
+    return ptr + size1;
+}
+
+bool isPrecedingAndFree(char* curr, char* ptr){
+    return (getNext(curr) == ptr) && (isFree(curr));
+}
+bool mergeBlocks(char* p1, char* p2){
+    //merge to p1
+    int size1 = getSize(p1);
+    int size2 = getSize(p2);
+    return (setSize(p1, size1+size2));
+}
+
+void* mymalloc(size_t size, char* file, int line) {
+    
+    size_t aligned_size = ROUNDUP8(size);
+
+    struct MetaData* current = (struct MetaData*)memory;
+    
+    if(!(current->size > 0)){
+        current->size=MEMLENGTH;
     }
-    meta* ptr = header;
-    //now look for chunk big enough to hold memory
-    /* Conditions:
-        if chunk is not big enough OR is not free go to next chunk
-    */
-    while(ptr!=NULL){
-        if(ptr->size < (size + metasize) || ptr->state != FREE){
+    while(current != NULL){
+        if(!current->is_allocated && current->size >= aligned_size){
+            current->is_allocated = 1; 
+            current->size = aligned_size;
+            if(current->next == NULL){
+                
+                current->next = (struct MetaData*) current + aligned_size;
+                current->next->is_allocated = FREE;
+                current->next->size = MEMLENGTH - (aligned_size + sizeof(struct MetaData));
+            }
             
-            ptr = ptr->next;
-        }else{
+            return (void*)current + sizeof(struct MetaData);
             
-            //set up next metadata
-            ptr->next = (char*)ptr + size + metasize; //cast to char* so it's refering to 1 byte
-            ptr->next->state = FREE;        //^ size of ptr
-            ptr->next->size = ptr->size - size - metasize;
-
-            ptr->state = ALOC;
-            ptr->size = metasize + size;
-            return (char*)ptr + metasize;
         }
+        current = current->next;
     }
 
-    //not enough space 
-    printf("Not enough space for %d bytes, requested in file %s at line %d", size, file, line);
     return NULL;
-
 }
 
 void* myfree(void* ptr,char* file, int line){
-    
+    if(!validPtr(ptr)){
+        printf("Error: Attempted to free a pointer that was not obtained from heap, in FILE %s at LINE %d\n", file, line);
+        return NULL;
+    }
+    char* curr = heapstart;
+    char* realPtr = ptr - sizeof(struct MetaData);
+
+    while(curr< heapstart+MEMLENGTH){
+        if(isPrecedingAndFree(curr, realPtr)){
+            mergeBlocks(curr, realPtr);
+            if(isFree(getNext(curr))){
+                mergeBlocks(curr, getNext(curr));
+            }
+            //invalidate ptr?
+            return NULL;
+        }
+        if(realPtr == curr){
+            if(isFree(realPtr)){
+                printf("Error: Double free, in FILE %s at LINE %d\n", file, line);
+                return NULL;
+            }
+            if(isFree(getNext(curr))){
+                mergeBlocks(curr, getNext(curr));
+            }
+            setState(realPtr, 1);
+            //invalidate prr
+            return NULL;
+        }
+        curr = getNext(curr);
+    }
+    printf("Error: Attempted to free a pointer that does not point to the start of an alloted chunk OR was previously freed, in FILE %s at LINE %d\n", file, line);
+    return NULL;
 }
