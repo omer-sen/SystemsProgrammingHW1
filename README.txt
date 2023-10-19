@@ -25,7 +25,11 @@ in myfree() we can encounter 3 different errors:
     this by making sure the pointer/address is within the bounds of the static global memory array,
     i.e "memory_start < ptr < memory_end". If not, we print out this error, and return NULL.
 
-    2. Double free
+    2. Double free, because of the coallesing property of free, if a pointer is freed once, coallesed
+		with another chunk, and freed again, there is no way of know if it used to point to a real chunk,
+		because that data is now owned by another client. We could create a struct that kept track of all
+		pointers, but we decided this was too much overhead only to report a specific kind of error.
+		Instead we report a double free error twice.
 
     3. Pointer does not point to the beginning of a chunk. 
     
