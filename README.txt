@@ -36,13 +36,9 @@ in myfree() we can encounter 3 different errors:
     **we never look in the contents of pointer unless we're sure it starts at the beginning of chunk
 
 TESTING:
-
-DESIGN NOTES:
-
-
-TEST PLAN:
+    TEST PLAN:
 
 
-DESCRIPTIONS OF TEST PROGRAMS:
+    DESCRIPTIONS OF TEST PROGRAMS:
 
 DESIGN NOTES:
