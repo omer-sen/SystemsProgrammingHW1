@@ -9,7 +9,5 @@ $(TARGET): $(TARGET).c $(TARGET).h
 
 memgrind: memgrind.c
 	$(CC) $(CFLAGS) $^ -o $@
-memgrind: memgrind.c
-	$(CC) $(CFLAGS) $^ -o $@
 clean:
 	rm -rf $(TARGET) *.o *.a *.dylib *.dSYM
