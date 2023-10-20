@@ -102,7 +102,5 @@ TESTING:
 
     5. The client uses randomization to either allocate the whole memory, MEMLENGTH - 16 and free it immediately, or allocate 1 byte memory and free it immediately.
 
-    DESCRIPTIONS OF TEST PROGRAMS:
-
 
 
