@@ -13,7 +13,7 @@ IMPLEMENTATION:
     To get a pointer to the next metadata, we simply obtain the size of the current metadata, and add it to the current pointer. Using 
     these means, we were able to handle the metadata and payloads.
 
-    MACROS & METHODS: 
+    METHODS & MACROS: 
     We included several different methods that, in summary, allow us to get and set the size and state of the current and next
     metadata. This was done using the aforementioned pointer arithmetic. We also have a getNext() method which returns a pointer to the next 
     metadata, and validPtr() which returns a boolean that conveys whether a given pointer/address is within the range of memory[]. 
@@ -28,8 +28,27 @@ IMPLEMENTATION:
     ALOC macros to be used when reading and writing chunk states. 
 
     MYMALLOC:
+    Our procedure for mymalloc is as follows:
+        1. roundup the size to next highest multiple of 8
+        2. iterate through each metadata checking if it's chunksize==0 OR big enough to hold the client's data, it's metadata, and the next metadata
+            2a. if either are true we first set the size of this metadata to "size+8" (+8 for the metadata) and the state to free (i.e. 1). Now we need to 
+            set up the size and state next metadata
+                2aa. if the chunk size was 0, it means that the memory is uninitialized. Therefore, the size of next meta data is simply "MEMLENGTH - (size_of_current_chunk)"
+                2ab. else, the next metadata has size "chunk_size - (size+8)"
+                2ac. the state of the next metadata will always be free (i.e. 1)
+                2ad. now return "ptr+8". The "+ 8" ensures we return a pointer to the beginning of the payload.
+        3. if the loop terminates it means that there is no space in the heap for the requested amount of BYTES, so we report this error and return NULL.
 
     MYFREE:
+    Our procedure for myfree is as follows:
+        1. check if the pointer is valid using validPtr()
+        2. if so, subtract 8 from ptr and refer to it as real ptr
+            ** ptr refers to the start of a chunk, so ptr-8 will refer to that chunk's metadata
+            ** whether ptr actually points to a beginning of a chunk or not doesn't risk the chance that we accidentally access proprietary data 
+            because we will only compare the ptr (address) with our iterator. We only access realPtr when we're certain it's a real pointer.
+        2. iterate through each metadata checking if:
+            2a. isPrecedingAndFree(curr, realPtr) == true. if so merge curr and realPtr, and if the next chunk is free, merge that as well.
+            2b else, if (realPtr == curr)
 
 ERORRS:
 To handle errors in both mymalloc() and myfree(), we decide to print out the specifc error to the user,
