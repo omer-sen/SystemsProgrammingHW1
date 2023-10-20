@@ -1,7 +1,13 @@
 TARGET = mymalloc
 CC     = gcc
-CFLAGS = -g -Wall -Wvla -Werror -fsanitize=address,undefined
-$(TARGET): $(TARGET).c
+CFLAGS = -g -std=c99 -Wall -Wvla -Werror -fsanitize=address,undefined
+
+all: mymalloc memgrind
+
+$(TARGET): $(TARGET).c $(TARGET).h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+memgrind: memgrind.c
 	$(CC) $(CFLAGS) $^ -o $@
 memgrind: memgrind.c
 	$(CC) $(CFLAGS) $^ -o $@
