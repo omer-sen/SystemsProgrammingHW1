@@ -46,15 +46,17 @@ IMPLEMENTATION:
             ** ptr refers to the start of a chunk, so ptr-8 will refer to that chunk's metadata
             ** whether ptr actually points to a beginning of a chunk or not doesn't risk the chance that we accidentally access proprietary data 
             because we will only compare the ptr (address) with our iterator. We only access realPtr when we're certain it's a real pointer.
-        2. iterate through each metadata checking if:
-            2a. isPrecedingAndFree(curr, realPtr) == true. if so merge curr and realPtr, and if the next chunk is free, merge that as well.
-            2b else, if (realPtr == curr)
+        3. iterate through each metadata checking if:
+            3a. isPrecedingAndFree(curr, realPtr) == true. if so merge curr and realPtr, and if the next chunk is free, merge that as well.
+            3b. else, if (realPtr == curr), it means we've found the ptr, and no free chunk precedes it. Therefore we simply check if the next chunk is free, if so we merge.
+            Then we set the state of realPtr to free.
+        4. if the loop terminates, it means that the ptr does to point to a valid metadata, in which case we return NULL
 
 ERORRS:
 To handle errors in both mymalloc() and myfree(), we decide to print out the specifc error to the user,
 followed by the file name and line nubmer where the erorr occured.
 
-in mymalloc() we can encouter 2 different errors:
+In mymalloc() we can encouter 2 different errors:
 
     1. The client requested 0 bytes. In this case we simply print out the error, and return a NULL 
     pointer.
@@ -64,21 +66,26 @@ in mymalloc() we can encouter 2 different errors:
     client's data. In this case, the error is reported to the client, along with the number of bytes
     requested, and a NULL pointer is returned.
 
-in myfree() we can encounter 3 different errors:
+In myfree() we can encounter 3 different errors:
 
     1. The client attemtps to free a pointer that was not obtained from the mymalloc(). We can catch
     this by making sure the pointer/address is within the bounds of the static global memory array,
     i.e "memory_start < ptr < memory_end". If not, we print out this error, and return NULL.
 
-    2. Double free, because of the coallesing property of free, if a pointer is freed once, coallesed
-		with another chunk, and freed again, there is no way of know if it used to point to a real chunk,
-		because that data is now owned by another client. We could create a struct that kept track of all
-		pointers, but we decided this was too much overhead only to report a specific kind of error.
-		Instead we report a double free error twice.
+    2. Pointer does not point to the beginning of a payload. This occurs when the metadata-iterating loop terminates. 
+    Because we've already checked if the pointer was within the bounds of the heap, the only possible way this happens is 
+    if the client id not pass a correct pointer to the begninng of a payload.  In this case we print out this error,
+    and return NULL
 
-    3. Pointer does not point to the beginning of a chunk. 
-    
-    **we never look in the contents of pointer unless we're sure it starts at the beginning of chunk
+    2. Double free. because of the coallesing property of free, if a pointer is freed once, coallesed
+    with another chunk, and freed again, there is no way of knowing if it used to point to a real chunk,
+    because that data is now owned by another client. We could create a struct that kept track of all
+    pointers, but we decided this was too much overhead only to report a specific kind of error.
+    Instead we report a double free error twice. Once if a freed metadata is attempted to be freed twice, and another time when 
+    the metadata-iterator terminates, which means the given pointer does not point to the start of a chunk. Again this could be 
+    because the client attempted to free a chunk that has already been freed AND coallesed. In this case we print out this error,
+    and return NULL.
+
 
 TESTING:
     TEST PLAN:

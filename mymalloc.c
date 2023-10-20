@@ -140,6 +140,6 @@ void* myfree(void* ptr,char* file, int line){
         }
         curr = getNext(curr);
     }
-    printf("Error: Attempted to free a pointer that does not point to the start of an alloted chunk OR was previously freed, in FILE %s at LINE %d\n", file, line);
+    printf("Error: Attempted to free a pointer that does not point to the start of an alloted payload OR was previously freed, in FILE %s at LINE %d\n", file, line);
     return NULL;
 }
