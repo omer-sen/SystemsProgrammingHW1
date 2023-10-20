@@ -63,7 +63,18 @@ in myfree() we can encounter 3 different errors:
 
 TESTING:
     TEST PLAN:
+    
+    1. The client attempts to allocate 1 byte memory 120 times, and immediately frees the allocated memory. This test is run 50 times
 
+    2. The client uses malloc() to get 120 1-byte objects, storing the pointers in an array, then use free() to deallocate the chunks.
+
+    3. The client creates an array of 120 pointers, and randomly allocates or frees the memory in the array. This is continued until the client
+    allocated memory 120 times. The rest of the memory is freed afterwards by the client.
+
+    4. The client uses malloc() to get 120 1-byte objects, storing the pointers in an array, then use free() to deallocate the chunks.
+    Afterwards, the client tries to allocate a huge chunk, specifically, MEMLENGTH - 16. Number 16 represents the metadata that is held in the memory.
+
+    5. The client uses randomization to either allocate the whole memory, MEMLENGTH - 16 and free it immediately, or allocate 1 byte memory and free it immediately.
 
     DESCRIPTIONS OF TEST PROGRAMS:
 
