@@ -64,8 +64,8 @@ char* getNext(char* ptr){
     return ptr + size1;
 }
 void* mymalloc(size_t size, char* file, int line){
-    if(size==0){
-        printf("Cannot allocate 0 bytes");
+    if(size<=0){
+        printf("Cannot allocate %zu bytes", size);
         return NULL;
     }
     size= ROUNDUP8(size); //metadata should always be a multiple of 8 bytes
