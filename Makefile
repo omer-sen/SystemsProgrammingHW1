@@ -1,13 +1,19 @@
+CC      = gcc
+CFLAGS  = -g -std=c99 -Wall -Wvla -Werror -fsanitize=address,undefined
+
 TARGET = mymalloc
-CC     = gcc
-CFLAGS = -g -std=c99 -Wall -Wvla -Werror -fsanitize=address,undefined
 
-all: mymalloc memgrind
+all: $(TARGET)
 
-$(TARGET): $(TARGET).c $(TARGET).h
-	$(CC) $(CFLAGS) -c $< -o $@
+$(TARGET): mymalloc.o memgrind.o
+	$(CC) $(CFLAGS) mymalloc.o memgrind.o -o $@
 
-memgrind: memgrind.c
-	$(CC) $(CFLAGS) $^ -o $@
+mymalloc.o: mymalloc.c mymalloc.h
+	$(CC) $(CFLAGS) -c mymalloc.c
+
+memgrind.o: memgrind.c mymalloc.h
+	$(CC) $(CFLAGS) -c memgrind.c
+
 clean:
-	rm -rf $(TARGET) *.o *.a *.dylib *.dSYM
+	rm -f mymalloc.o memgrind.o $(TARGET)
+
