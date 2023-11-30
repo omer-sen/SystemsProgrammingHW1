@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include "mymalloc.h"
+#include "mymalloc.c"
 #include <time.h>
 
 int memCleared(){

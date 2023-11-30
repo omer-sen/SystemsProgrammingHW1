@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "mymalloc.h"
 
-
+#define MEMLENGTH 2048
 #define FREE 1
 #define ALOC 0
 #define ROUNDUP8(x) (((x) + 7) & (-8))
