@@ -64,7 +64,11 @@ char* getNext(char* ptr){
 }
 void* mymalloc(size_t size, char* file, int line){
     if(size<=0){
-        printf("Cannot allocate %zu bytes", size);
+        printf("Cannot allocate %zu bytes\n", size);
+        return NULL;
+    }
+    if(size>MEMLENGTH-8){
+        printf("Not enough space for %zu BYTES, requested in FILE %s at LINE %d\n", size, file, line);
         return NULL;
     }
     size= ROUNDUP8(size); //metadata should always be a multiple of 8 bytes
@@ -74,7 +78,7 @@ void* mymalloc(size_t size, char* file, int line){
         bool IsFree = isFree(ptr);
         int chunkSize = getSize(ptr);
 
-        if(chunkSize==0 || (IsFree && chunkSize >= size+16) ){//space for current+next metadata (8+8)
+        if(chunkSize==0 || (IsFree && chunkSize >= size+8) ){//space for current+next metadata (8+8)
             setSize(ptr, size+8);
             setState(ptr, 0);
             //set up next metadata

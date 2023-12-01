@@ -8,7 +8,7 @@
 #define free(x) myfree(x, __FILE__, __LINE__)
 
 extern char* heapstart;
-#define MEMLENGTH 2048
+#define MEMLENGTH 4096
 
 void* mymalloc(size_t size, char* file, int line);
 void* myfree(void* ptr,char* file, int line);
